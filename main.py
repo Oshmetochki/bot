@@ -1,10 +1,10 @@
 import requests
 import time
 
-from token import token
+from token2 import token3
 
 API_URL: str = 'https://api.telegram.org/bot'
-BOT_TOKEN: str = token
+BOT_TOKEN: str = token3
 TEXT: str = 'ggs'
 API_CATS_URL: str = 'https://aws.random.cat/meow'
 MAX_COUNTER: int = 10
