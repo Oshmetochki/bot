@@ -24,11 +24,13 @@ async def stickers(message: Message):
     await message.answer_sticker(message.sticker.file_id)
 
 async def send_echo(message: Message):
-    await message.reply(text=message.text)
+    await message.answer(text=message.text)
 
-dp.message.register(stickers)
+
+
 dp.message.register(process_start_command, Command(commands=["start"]))
 dp.message.register(process_help_command, Command(commands=['help']))
+dp.message.register(stickers)
 dp.message.register(send_echo)
 
 if __name__ == '__main__':

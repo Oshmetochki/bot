@@ -1,112 +1,62 @@
-from token2 import token3
-from random import *
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message
-from aiogram.filters import Text, Command
+from aiogram.filters import CommandStart, Text
+from aiogram.types import (CallbackQuery, InlineKeyboardButton,
+                           InlineKeyboardMarkup, Message)
 
-def random_number():
-    return randint(1,100)
+import token2
 
-BOT_TOKEN: str= token3
+# Вместо BOT TOKEN HERE нужно вставить токен вашего бота,
+# полученный у @BotFather
+API_TOKEN = token2.token3
 
-bot=Bot(BOT_TOKEN)
-dp=Dispatcher()
+# Создаем объекты бота и диспетчера
+bot: Bot = Bot(token=API_TOKEN)
+dp: Dispatcher = Dispatcher()
 
-ATTEMPTS=5
-users={294789666:{'game': False,
-                  'user_number': None,
-                  'attempts': None,
-                  'total_games': 0,
-                  'wins': 0}}
+# Создаем объекты инлайн-кнопок
+big_button_1: InlineKeyboardButton = InlineKeyboardButton(
+    text='БОЛЬШАЯ КНОПКА 1',
+    callback_data='big_button_1_pressed')
 
-@dp.message(Command(commands=['Start']))
-async def command_start(message: Message):
-    await message.answer('Привет!\nДавай сыграем в игру "Угадай число"?\n\n'
-                         'Чтобы получить правила игры и список доступных '
-                         'команд - отправьте команду /help')
-    if message.from_user.id not in users:
-        users[message.from_user.id] = {'game': False,
-                                       'user_number': None,
-                                       'attempts': None,
-                                       'total_games': 0,
-                                       'wins': 0}
+big_button_2: InlineKeyboardButton = InlineKeyboardButton(
+    text='БОЛЬШАЯ КНОПКА 2',
+    callback_data='big_button_2_pressed')
 
-@dp.message(Command(commands=['help']))
-async def commadn_help(message:Message):
-    await message.answer(f'Правила игры:\n\nЯ загадываю число от 1 до 100, '
-                         f'а вам нужно его угадать\nУ вас есть {ATTEMPTS} '
-                         f'попыток\n\nДоступные команды:\n/help - правила '
-                         f'игры и список команд\n/cancel - выйти из игры\n'
-                         f'/stat - посмотреть статистику\n\nДавай сыграем?')
+# Создаем объект инлайн-клавиатуры
+keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(
+    inline_keyboard=[[big_button_1],
+                     [big_button_2]])
 
-@dp.message(Command(commands=['stat']))
-async def command_stat(message:Message):
-    await message.answer(f'Всего игр сыграно: {users[message.from_user.id]["total_games"]}\n'
-                         f'Игр выиграно: {users[message.from_user.id]["wins"]}')
 
-@dp.message(Command(commands=['cancel']))
-async def command_cancel():
-    if users[message.from_user.id]['game']:
-        await message.answer('Вы вышли из игры. Если захотите сыграть '
-                             'снова - напишите об этом')
-        users[message.from_user.id]['game']=False
-    else:
-        await message.answer('А мы итак с вами не играем. '
-                             'Может, сыграем разок?')
+# Этот хэндлер будет срабатывать на команду "/start"
+# и отправлять в чат клавиатуру с инлайн-кнопками
+@dp.message(CommandStart())
+async def process_start_command(message: Message):
+    await message.answer(text='Это инлайн-кнопки. Нажми на любую!',
+                         reply_markup=keyboard)
 
-@dp.message(Text(text=['Да', 'Давай', 'Сыграем', 'Игра',
-                       'Играть', 'Хочу играть'], ignore_case=True))
-async def positive_answer(message:Message):
-    if not users[message.from_user.id]['game']:
-        await message.answer('Ура!\n\nЯ загадал число от 1 до 100, '
-                             'попробуй угадать!')
-        users[message.from_user.id]['game'] = True
-        users[message.from_user.id]['user_number'] = random_number()
-        users[message.from_user.id]['attempts'] = ATTEMPTS
-    else:
-        await message.answer(
-            'Пока мы играем в игру я могу\nреагировать только на числа от 1 до 100\nи команды /cancel и /stat')
 
-@dp.message(Text(text=['Нет', 'Не', 'Не хочу', 'Не буду'], ignore_case=True))
-async def negative_answer(message:Message):
-    if not users[message.from_user.id]['game']:
-        await message.answer('Жаль :(\n\nЕсли захотите поиграть - просто '
-                             'напишите об этом')
-    else:
-        await message.answer('Мы же сейчас с вами играем. Присылайте, '
-                             'пожалуйста, числа от 1 до 100')
+# Этот хэндлер будет срабатывать на апдейт типа CallbackQuery
+# с data 'big_button_1_pressed'
+@dp.callback_query(Text(text=['big_button_1_pressed']))
+async def process_button_1_press(callback: CallbackQuery):
+    if callback.message.text != 'Была нажата БОЛЬШАЯ КНОПКА 1':
+        await callback.message.edit_text(
+            text='Была нажата БОЛЬШАЯ КНОПКА 1',
+            reply_markup=callback.message.reply_markup)
+    await callback.answer(text='Ура! Нажата кнопка 1')
 
-@dp.message(lambda x: x.text and x.text.isdigit() and 1 <= int(x.text) <= 100)
-async def main_game(message:Message):
-    if users[message.from_user.id]['game']:
-        if int(message.text) == users[message.from_user.id]['user_number']:
-            await message.answer('Ура!!! Вы угадали число!\n\n'
-                                 'Может, сыграем еще?')
-            users[message.from_user.id]['game']=False
-            users[message.from_user.id]['total_games']+=1
-            users[message.from_user.id]['wins']+=1
-        elif int(message.text) > users[message.from_user.id]['user_number']:
-            await message.answer('Мое число меньше')
-            users[message.from_user.id]['attempts']-=1
-        elif int(message.text) < users[message.from_user.id]['user_number']:
-            await message.answer('Мое число больше')
-            users[message.from_user.id]['attempts'] -=1
-        if users[message.from_user.id]['attempts'] == 0:
-            await message.answer('Вы проиграли!')
-            users[message.from_user.id]['game']=False
-            users[message.from_user.id]['total_games']+=1
-    else:
-        await message.answer('Мы еще не играем. Хотите сыграть?')
 
-@dp.message()
-async def command_else(message: Message):
-    if users[message.from_user.id]['game']:
-        await message.answer('Мы же сейчас с вами играем. '
-                             'Присылайте, пожалуйста, числа от 1 до 100')
-    else:
-        await message.answer('Я довольно ограниченный бот, давайте '
-                             'просто сыграем в игру?')
+# Этот хэндлер будет срабатывать на апдейт типа CallbackQuery
+# с data 'big_button_2_pressed'
+@dp.callback_query(Text(text=['big_button_2_pressed']))
+async def process_button_2_press(callback: CallbackQuery):
+    if callback.message.text != 'Была нажата БОЛЬШАЯ КНОПКА 2':
+        await callback.message.edit_text(
+            text='Была нажата БОЛЬШАЯ КНОПКА 2',
+            reply_markup=callback.message.reply_markup)
+    await callback.answer(text='Ура! Нажата кнопка 2')
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     dp.run_polling(bot)
-
